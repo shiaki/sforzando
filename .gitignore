@@ -102,3 +102,13 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# data files.
+.json
+.txt
+.list
+.npy
+.npz
+
+# images
+image-stamps
