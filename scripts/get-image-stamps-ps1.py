@@ -12,6 +12,8 @@ import logging
 import json
 from collections import OrderedDict
 
+import numpy as np
+
 from astropy.coordinates import SkyCoord
 
 from panstamps.downloader import downloader
@@ -61,7 +63,7 @@ if __name__ == '__main__':
         if (event_i in image_cutout) and (image_cutout[event_i]['ps1']):
             continue
 
-        time.sleep(1.) # no hurry
+        time.sleep(1. + np.abs(np.random.randn())) # no hurry
 
         # locate image
         try:

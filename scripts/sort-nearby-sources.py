@@ -97,13 +97,14 @@ if __name__ == '__main__':
                 ))
 
         # sort then by projected physical dist.
+        srcs_i = list(filter(lambda x: x[-1] < 50., srcs_i)) # within 50 kpc
         srcs_i = sorted(srcs_i, key=lambda x: x[-1])
 
         # put into dict.
         if srcs_i:
-            nearest_src[event_i] = srcs_i[0]
+            nearest_src[event_i] = srcs_i
         else:
-            nearest_src[event_i] = ()
+            nearest_src[event_i] = list()
 
     # save into file.
     with open('nearest-host-candidate.json', 'w') as fp:

@@ -134,13 +134,13 @@ if (__name__ == '__main__') and ('run' in sys.argv):
             cand_events.items(), total=len(cand_events)):
 
         if event_i in image_cutout:
-            continue
+            continue # already retrieved, skip.
 
         # get its nearest host candidate
         nh_i = nearest_hosts[event_i] # could be empty tuple/list.
 
-        # skip if the nearest host candidate is within 30 kpc.
-        if nh_i and nh_i[-1] < 30.:
+        # skip if the nearest host candidate is within 15 kpc.
+        if nh_i and nh_i[0][-1] < 15.:
             continue
 
         # read RA, Dec of the event,

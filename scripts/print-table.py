@@ -32,8 +32,8 @@ if __name__ == '__main__':
         nh_i = nearest_hosts[event_i]
         if not nh_i:
             line_2 = ''
-        elif nh_i[-1] < 30:
+        elif nh_i[0][-1] < 10:
             continue
         else:
-            line_2 = fmtstr_hostcand.format(*nh_i)
+            line_2 = fmtstr_hostcand.format(*(nh_i[0]))
         print(line_1 + ' ' + line_2)
