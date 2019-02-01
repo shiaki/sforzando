@@ -23,6 +23,7 @@ stamp_sizes = {
     'DES': 256 * 0.25,
     'DECaLS': 256 * 0.25,
     'MzLS-BASS': 256 * 0.25,
+    'ps1': 120.,
 }
 
 plot_colors = {
@@ -38,7 +39,8 @@ plot_colors = {
 
 def annotate_image(event_name, event_info, survey_name, image_file,
         nearby_srcs, draw_crosshair=True, draw_sources=True, draw_cicle=True,
-        circle_radius_kpc=15., desti_dir='./tmp-img/', filename_suffix='',):
+        circle_radius_kpc=15., desti_dir='./tmp-img/', filename_suffix='',
+        linewidth_factor=1):
 
     # read image file.
     img = Image.open(image_file)
@@ -53,8 +55,10 @@ def annotate_image(event_name, event_info, survey_name, image_file,
     # draw crosshair
     if draw_crosshair:
         ch_c = '#ffffff'
-        imdraw.line([r2pix(0., 0.05), r2pix(0., 0.2)], fill=ch_c, width=1)
-        imdraw.line([r2pix(0.051, 0.), r2pix(0.2, 0.)], fill=ch_c, width=1)
+        imdraw.line([r2pix(0., 0.05), r2pix(0., 0.2)],
+                fill=ch_c, width=linewidth_factor)
+        imdraw.line([r2pix(0.051, 0.), r2pix(0.2, 0.)],
+                fill=ch_c, width=linewidth_factor)
 
     # draw nearby sources
     if draw_sources:
@@ -84,20 +88,25 @@ def annotate_image(event_name, event_info, survey_name, image_file,
                     or xp_i > im_w - 1 - 10 or yp_i > im_h - 1 - 10:
                 continue # beyond image box.
 
-            imdraw.line([(xp_i - 10, yp_i), (xp_i - 5, yp_i)], fill=plot_colors[src_i[0]])
-            imdraw.line([(xp_i, yp_i + 10), (xp_i, yp_i + 5)], fill=plot_colors[src_i[0]])
+            imdraw.line([(xp_i - 10, yp_i), (xp_i - 5, yp_i)],
+                        fill=plot_colors[src_i[0]], width=linewidth_factor)
+            imdraw.line([(xp_i, yp_i + 10), (xp_i, yp_i + 5)],
+                        fill=plot_colors[src_i[0]], width=linewidth_factor)
 
     if draw_cicle:
 
         # calc radius.
         zred = float(event_info['redshift'])
         kpc_per_asec = cosmo.kpc_proper_per_arcmin(zred).value / 60.
-        arad = (circle_radius_kpc / kpc_per_asec) \
-                / (stamp_sizes[survey_name] / im_w)
 
-        imdraw.ellipse([(im_w - 1) / 2. - arad, (im_h - 1) / 2. - arad, \
-                (im_w - 1) / 2. + arad, (im_h - 1) / 2. + arad],
-                outline='#999999')
+        if kpc_per_asec != 0.: # in case of bad redshift
+            arad = (circle_radius_kpc / kpc_per_asec) \
+                    / (stamp_sizes[survey_name] / im_w)
+            imdraw.ellipse([(im_w - 1) / 2. - arad, (im_h - 1) / 2. - arad, \
+                    (im_w - 1) / 2. + arad, (im_h - 1) / 2. + arad],
+                    outline='#999999', width=linewidth_factor)
+        else:
+            pass
 
     del imdraw
 
@@ -110,10 +119,15 @@ def annotate_image(event_name, event_info, survey_name, image_file,
     else:
         desti_fname = src_fname
 
-    with open(os.path.join(desti_dir, desti_fname), 'wb') as fp:
+    # write annotated image to new position.
+    new_fpath = os.path.join(desti_dir, desti_fname)
+    with open(new_fpath, 'wb') as fp:
         img.save(fp, 'JPEG', quality=90, optimize=True)
 
-if __name__ == '__main__':
+    # return filename.
+    return new_fpath
+
+if (__name__ == '__main__') and ('runls' in sys.argv):
 
     # read files.
     with open('candidate-events.json', 'r') as fp:
@@ -123,17 +137,82 @@ if __name__ == '__main__':
     with open('nearest-host-candidate.json', 'r') as fp:
         nearest_hosts = json.load(fp, object_pairs_hook=OrderedDict)
 
+    # image cutouts for legacysurvey SkyViewer
     with open('image-cutout.json', 'r') as fp:
         image_cutout = json.load(fp, object_pairs_hook=OrderedDict)
 
+    # get (or create) the list of annotated image stamps.
+    if os.path.isfile('./annotated-images.json'):
+        with open('./annotated-images.json', 'r') as fp:
+            annotated_images = json.load(fp, object_pairs_hook=OrderedDict)
+    else:
+        annotated_images = OrderedDict()
+
     # for each single event, for every image stamp
     for event_i, image_info_i in image_cutout.items():
+
+        # output images.
+        if event_i not in annotated_images:
+            annotated_images[event_i] = OrderedDict()
+
         for imgsrc_i, imgfile_i in image_info_i.items():
 
             # skip empty images.
-            if imgfile_i is None: continue
+            if imgfile_i is None:
+                annotated_images[event_i][imgsrc_i] = None
+                continue
 
             # annotate and save.
             nhs_i = nearest_hosts[event_i]
-            annotate_image(event_i, cand_events[event_i], imgsrc_i, imgfile_i,
-                    nhs_i, filename_suffix='meow')
+            outfile_i = annotate_image(event_i, cand_events[event_i],
+                    imgsrc_i, imgfile_i, nhs_i, desti_dir='./annotated/')
+            annotated_images[event_i][imgsrc_i] = outfile_i
+
+    # save to json.
+    with open('annotated-images.json', 'w') as fp:
+        json.dump(annotated_images, fp, indent=4)
+
+if (__name__ == '__main__') and ('runps1' in sys.argv):
+
+    # read files.
+    with open('candidate-events.json', 'r') as fp:
+        cand_events = json.load(fp, object_pairs_hook=OrderedDict)
+
+    # read nearest host candidates.
+    with open('nearest-host-candidate.json', 'r') as fp:
+        nearest_hosts = json.load(fp, object_pairs_hook=OrderedDict)
+
+    # image cutouts for panstarrs
+    with open('image-cutout-ps1.json', 'r') as fp:
+        image_cutout_ps1 = json.load(fp, object_pairs_hook=OrderedDict)
+
+    # get (or create) the list of annotated image stamps.
+    if os.path.isfile('./annotated-images.json'):
+        with open('./annotated-images.json', 'r') as fp:
+            annotated_images = json.load(fp, object_pairs_hook=OrderedDict)
+    else:
+        annotated_images = OrderedDict()
+
+    for event_i, image_info_i in image_cutout_ps1.items():
+
+        # output images.
+        if event_i not in annotated_images:
+            annotated_images[event_i] = OrderedDict()
+
+        for imgsrc_i, imgfile_i in image_info_i.items():
+
+            # skip empty images.
+            if imgfile_i is None:
+                annotated_images[event_i][imgsrc_i] = None
+                continue
+
+            # annotate and save.
+            nhs_i = nearest_hosts[event_i]
+            outfile_i = annotate_image(event_i, cand_events[event_i],
+                    imgsrc_i, imgfile_i, nhs_i, desti_dir='./annotated/',
+                    draw_crosshair=False, linewidth_factor=3)
+            annotated_images[event_i][imgsrc_i] = outfile_i
+
+    # save to json.
+    with open('annotated-images.json', 'w') as fp:
+        json.dump(annotated_images, fp, indent=4)
