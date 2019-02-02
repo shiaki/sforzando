@@ -98,11 +98,54 @@ if __name__ == '__main__':
         render(imfile_i)
 
     def mark_as_uncertain(event): # mark host as uncertain.
-        print(i_current, 'Marked as uncertain')
         event_i, imsrc_i, imfile_i = image_stamps[i_current]
         if event_i not in inspection:
             inspection[event_i] = OrderedDict()
-        inspection[event_i][imsrc_i] = '?'
+            inspection[event_i][imsrc_i] = 'u'
+            print('Flagged as uncertain')
+        elif imsrc_i not in inspection[event_i]:
+            inspection[event_i][imsrc_i] = 'u'
+            print('Flagged as uncertain')
+        elif '?' not in inspection[event_i][imsrc_i]:
+            inspection[event_i][imsrc_i] += 'u'
+            print('Flagged as uncertain')
+        else:
+            inspection[event_i][imsrc_i].replace('u', '')
+            print('Uncertain flag removed')
+        next_key(event)
+
+    def mark_as_confusion(event): # mark host as uncertain.
+        event_i, imsrc_i, imfile_i = image_stamps[i_current]
+        if event_i not in inspection:
+            inspection[event_i] = OrderedDict()
+            inspection[event_i][imsrc_i] = 'c'
+            print('Flagged as confusion')
+        elif imsrc_i not in inspection[event_i]:
+            inspection[event_i][imsrc_i] = 'c'
+            print('Flagged as confusion')
+        elif '?' not in inspection[event_i][imsrc_i]:
+            inspection[event_i][imsrc_i] += 'c'
+            print('Flagged as confusion')
+        else:
+            inspection[event_i][imsrc_i].replace('c', '')
+            print('Confusion flag removed')
+        next_key(event)
+
+    def mark_as_favorite(event): # mark host as uncertain.
+        event_i, imsrc_i, imfile_i = image_stamps[i_current]
+        if event_i not in inspection:
+            inspection[event_i] = OrderedDict()
+            inspection[event_i][imsrc_i] = 'f'
+            print('Flagged as favorite')
+        elif imsrc_i not in inspection[event_i]:
+            inspection[event_i][imsrc_i] = 'f'
+            print('Flagged as favorite')
+        elif '?' not in inspection[event_i][imsrc_i]:
+            inspection[event_i][imsrc_i] += 'f'
+            print('Flagged as favorite')
+        else:
+            inspection[event_i][imsrc_i].replace('f', '')
+            print('Favorite flag removed')
         next_key(event)
 
     def mark_as_visible(event): # mark host as visible.
@@ -110,7 +153,10 @@ if __name__ == '__main__':
         event_i, imsrc_i, imfile_i = image_stamps[i_current]
         if event_i not in inspection:
             inspection[event_i] = OrderedDict()
-        inspection[event_i][imsrc_i] = 'y'
+        if imsrc_i not in inspection[event_i]:
+            inspection[event_i][imsrc_i] = ''
+        inspection[event_i][imsrc_i].replace('n', '')
+        inspection[event_i][imsrc_i] += 'y'
         next_key(event)
 
     def mark_as_absent(event): # mark host as absent
@@ -118,7 +164,10 @@ if __name__ == '__main__':
         event_i, imsrc_i, imfile_i = image_stamps[i_current]
         if event_i not in inspection:
             inspection[event_i] = OrderedDict()
-        inspection[event_i][imsrc_i] = 'n'
+        if imsrc_i not in inspection[event_i]:
+            inspection[event_i][imsrc_i] = ''
+        inspection[event_i][imsrc_i].replace('y', '')
+        inspection[event_i][imsrc_i] += 'n'
         next_key(event)
 
     def save_progress(event): # mark host as uncertain.
@@ -131,7 +180,9 @@ if __name__ == '__main__':
 
     root.bind('<Up>', mark_as_visible)
     root.bind('<Down>', mark_as_absent)
-    root.bind('q', mark_as_uncertain)
+    root.bind('u', mark_as_uncertain)
+    root.bind('c', mark_as_confusion)
+    root.bind('f', mark_as_favorite)
     root.bind('s', save_progress)
 
     # run program.

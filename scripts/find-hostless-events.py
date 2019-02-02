@@ -28,7 +28,7 @@ def claimedtype_to_str(claimedtype):
     '''
     rstr = list()
     for rec_i in claimedtype:
-        if rec_i['value'] in ['Candidate']:
+        if rec_i['value'] in ['Candidate', 'LGRB']:
             continue
         type_i, descr_i = rec_i['value'], list()
         if ('kind' in rec_i) and rec_i['kind']:
@@ -95,9 +95,10 @@ if __name__ == '__main__':
                     and event_info_i['claimedtype']):
                 continue
 
+            # skip events with only a `Candidate` or 'LGRB' flag.
             type_descr_i = claimedtype_to_str(event_info_i['claimedtype'])
             if not type_descr_i:
-                continue # skip events with only a `Candidate` flag.
+                continue
 
             # skip events without coordinates
             if ('ra' not in event_info_i) or ('dec' not in event_info_i) \
@@ -125,5 +126,6 @@ if __name__ == '__main__':
     # save into a file.
     with open('candidate-events.json', 'w') as fp:
         json.dump(candidate_events, fp, indent=4)
+    print('Number of candidates:', len(candidate_events))
 
 # EOF

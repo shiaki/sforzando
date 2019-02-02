@@ -61,7 +61,7 @@ if __name__ == '__main__':
 
         # search catalogs. (30" limit)
         tab_list_i = Vizier.query_region(crd_i,
-                                         radius=30. * u.arcsec,
+                                         radius=60. * u.arcsec,
                                          catalog=vizier_cats)
 
         sources_i = OrderedDict()

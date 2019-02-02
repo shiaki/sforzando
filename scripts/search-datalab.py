@@ -33,7 +33,7 @@ if __name__ == '__main__':
         candidate_hosts = OrderedDict()
 
     # 'radius' of the box.
-    box_radius = 30. / 60. / 60. # in degrees
+    box_radius = 60. / 60. / 60. # 60 asec in degrees
 
     # for each event: search for
     I_counter = 0

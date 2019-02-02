@@ -12,6 +12,7 @@ vizier_cats = [
     'VII/237/pgc',
     'V/147/sdss12',
     'VII/259/6dfgs',
+    'I/345/gaia2',
     # 'J/ApJS/199/26/table3',
     # 'VII/62A/mcg',
     # 'VII/155/rc3'
@@ -28,6 +29,7 @@ cat_names = {
     'J/ApJS/199/26/table3': '2MRS',
     'VII/62A/mcg':          'MCG',
     'VII/155/rc3':          'RC3',
+    'I/345/gaia2':          'Gaia2'
 }
 
 radec_cols = {
@@ -40,6 +42,7 @@ radec_cols = {
     'J/ApJS/199/26/table3': (( 2,  3), ('deg',  'deg')),
     'VII/62A/mcg':          (( 8,  9), ('hour', 'deg')),
     'VII/155/rc3':          (( 0,  1), ('hour', 'deg')),
+    'I/345/gaia2':          (( 0,  2), ('deg', 'deg')),
 }
 
 srcid_cols = {
@@ -52,4 +55,6 @@ srcid_cols = {
     'J/ApJS/199/26/table3': 0,
     'VII/62A/mcg':          0,
     'VII/155/rc3':          2,
+    'VII/155/rc3':          2,
+    'I/345/gaia2':          4,
 }
