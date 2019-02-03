@@ -10,6 +10,7 @@ import sys
 import json
 import glob
 from collections import OrderedDict, namedtuple
+import itertools as itt
 
 from tqdm import tqdm
 
@@ -17,7 +18,61 @@ import numpy as np
 from astropy.coordinates import SkyCoord
 from astropy.cosmology import WMAP9 as cosmo
 
+from scipy.sparse import csr_matrix
+from scipy.sparse.csgraph import connected_components
+
+import matplotlib.pyplot as plt
+
 from catalogs import *
+
+# encoder for numpy types from: https://github.com/mpld3/mpld3/issues/434
+class npEncoder(json.JSONEncoder):
+    """ Special json encoder for np types """
+    def default(self, obj):
+        if isinstance(obj, (np.int_, np.intc, np.intp, np.int8,
+            np.int16, np.int32, np.int64, np.uint8,
+            np.uint16,np.uint32, np.uint64)):
+            return int(obj)
+        elif isinstance(obj, (np.float_, np.float16, np.float32,
+            np.float64)):
+            return float(obj)
+        elif isinstance(obj,(np.ndarray,)):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
+
+def simple_match(ra_c, dec_c, srcs, dist_tol=2.):
+
+    '''
+    "Cross-match" sources within the patch.
+
+    Parameters
+    ----------
+
+    '''
+
+    # convert into delta-arcseconds
+    cos_d = np.cos(dec_c * np.pi / 180.)
+    dasec = lambda w: ((w[2] - ra_c) * 3.6e3 * cos_d, (w[3] - dec_c) * 3.6e3)
+    N_srcs, src_crds = len(srcs), list(map(dasec, srcs))
+
+    # calc local dist matrix.
+    D = np.zeros((N_srcs, N_srcs), dtype='i4')
+    for si_i, si_j in itt.combinations(range(N_srcs), 2):
+        sr_i, sr_j = src_crds[si_i], src_crds[si_j]
+        if abs(sr_i[0] - sr_j[0]) > dist_tol \
+                or abs(sr_i[1] - sr_j[1]) > dist_tol:
+            continue
+        if np.sqrt((sr_i[0] - sr_j[0]) ** 2 \
+                + (sr_i[1] - sr_j[1]) ** 2) > dist_tol:
+            continue
+        D[si_i, si_j] = D[si_j, si_i] = 1
+    D = csr_matrix(D)
+
+    # find connected components
+    N_cps, cps_label = connected_components(D)
+
+    # pack and return
+    return [si + (li,) for si, li in zip(srcs, cps_label)]
 
 def parse_datalab_csv(tab):
     ''' parse src_id, ra, dec from Data Lab '''
@@ -97,8 +152,10 @@ if __name__ == '__main__':
                 ))
 
         # sort then by projected physical dist.
-        srcs_i = list(filter(lambda x: x[-1] < 50., srcs_i)) # within 50 kpc
-        srcs_i = sorted(srcs_i, key=lambda x: x[-1])
+        # srcs_i = list(filter(lambda x: x[-1] < 50., srcs_i)) # within 50 kpc
+        # srcs_i = sorted(srcs_i, key=lambda x: x[-1])
+        # do NOT perform 50 proper kpc cut.
+        srcs_i = simple_match(crd_i.ra.deg, crd_i.dec.deg, srcs_i)
 
         # put into dict.
         if srcs_i:
@@ -108,6 +165,6 @@ if __name__ == '__main__':
 
     # save into file.
     with open('nearest-host-candidate.json', 'w') as fp:
-        json.dump(nearest_src, fp, indent=4)
+        json.dump(nearest_src, fp, indent=4, encoder=npEncoder)
 
 # EOF
