@@ -20,9 +20,9 @@ asec_per_deg = 3.6e3
 # image size in arcseconds for image files.
 stamp_sizes = {
     'SDSS': 256 * 0.20,
-    'DES': 256 * 0.25,
-    'DECaLS': 256 * 0.25,
-    'MzLS-BASS': 256 * 0.25,
+    'DES': 256 * 0.25 / 0.9375,
+    'DECaLS': 256 * 0.25 / 0.9375,
+    'MzLS-BASS': 256 * 0.25 / 0.9375,
     'ps1': 120.,
 }
 
@@ -34,13 +34,14 @@ plot_colors = {
     '2MASS-PSC': '#d11440', # rosy
     '2MASS-XSC': '#d11440',
     'HyperLEDA': '#ffffff',
-    '6dFGS': '#ffffff'
+    '6dFGS': '#ffffff',
+    'Gaia2': '#ffffff'
 }
 
 def annotate_image(event_name, event_info, survey_name, image_file,
         nearby_srcs, draw_crosshair=True, crosshair_len=(0.015, 0.035),
         draw_sources=True, draw_source_groups=True, group_rad=2.0,
-        draw_cicle=True, circle_radius_kpc=15., desti_dir='./tmp-img/',
+        draw_cicle=True, circle_radius_kpc=25., desti_dir='./tmp-img/',
         filename_suffix='', linewidth_factor=1):
 
     # read image file.
@@ -90,7 +91,7 @@ def annotate_image(event_name, event_info, survey_name, image_file,
             im_s = np.sqrt(im_h * im_w)
             ch_li, ch_lo = crosshair_len[0] * im_s, crosshair_len[1] * im_s
 
-            if (xp_i < ch_lo or yp_i < ch_lo) or
+            if (xp_i < ch_lo or yp_i < ch_lo) or \
                     (xp_i > im_w - (1 + ch_lo) or yp_i > im_h - (1 + ch_lo)):
                 continue # beyond image box.
 
@@ -114,9 +115,10 @@ def annotate_image(event_name, event_info, survey_name, image_file,
             # use proper motion in Gaia DR2 to separate galaxies and stars
             is_stellar = False
             for src_i in grp_srcs:
-                if src_i[0] == 'Gaia2': # this is a Gaia source.
+                if (src_i[0] == 'Gaia2') and (not(src_i[4] is None)):
                     if src_i[4] / src_i[5] > 2.:
                         is_stellar = True
+                        # this is a Gaia source with large proper motion.
 
             # convert relative coord to pixel coord.
             crd_i = SkyCoord(ra=grp_srcs[0][2],
@@ -127,7 +129,7 @@ def annotate_image(event_name, event_info, survey_name, image_file,
             xp_i, yp_i = d2pix(dra_i, ddec_i, stamp_sizes[survey_name])
 
             crad = np.sqrt(im_h * im_w) * (group_rad / stamp_sizes[survey_name])
-            if (xp_i < crad or yp_i < crad) or
+            if (xp_i < crad or yp_i < crad) or \
                     (xp_i > im_w - (1 + crad) or yp_i > im_h - (1 + crad)):
                 continue # beyond image box.
 

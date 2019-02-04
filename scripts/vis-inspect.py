@@ -9,6 +9,7 @@
 import sys
 import os
 import json
+import random
 from collections import OrderedDict, deque, namedtuple
 
 from tkinter import *
@@ -34,6 +35,9 @@ if __name__ == '__main__':
             if imfile_j: # skip null
                 image_stamps.append((event_i, imsrc_j, imfile_j))
 
+    # shuffle
+    random.shuffle(image_stamps)
+
     # read existing results.
     if os.path.isfile('./visual-inspection.json'):
         with open('./visual-inspection.json', 'r') as fp:
@@ -51,7 +55,10 @@ if __name__ == '__main__':
             if event_i not in inspection: break
             if imsrc_i not in inspection[event_i]: break
             i_current += 1
-        return image_stamps[i_current]
+        if image_stamps:
+            return image_stamps[i_current]
+        else:
+            return None, None, None
 
     # get next image.
     def prev_image():
@@ -95,43 +102,52 @@ if __name__ == '__main__':
         canvas.delete('all')
         event_i, imsrc_i, imfile_i = next_image()
         print(i_current, event_i, imsrc_i, imfile_i)
-        render(imfile_i)
+        if imfile_i:
+            render(imfile_i)
 
-    def mark_as_uncertain(event): # mark host as uncertain.
+    def mark_as_lowquality(event): # mark host as bad quality.
         event_i, imsrc_i, imfile_i = image_stamps[i_current]
         if event_i not in inspection:
             inspection[event_i] = OrderedDict()
-            inspection[event_i][imsrc_i] = 'u'
-            print('Flagged as uncertain')
+            inspection[event_i][imsrc_i] = 'q'
+            print('Flagged as bad quality')
         elif imsrc_i not in inspection[event_i]:
-            inspection[event_i][imsrc_i] = 'u'
-            print('Flagged as uncertain')
-        elif '?' not in inspection[event_i][imsrc_i]:
-            inspection[event_i][imsrc_i] += 'u'
-            print('Flagged as uncertain')
+            inspection[event_i][imsrc_i] = 'q'
+            print('Flagged as bad quality')
+        elif 'q' not in inspection[event_i][imsrc_i]:
+            inspection[event_i][imsrc_i] += 'q'
+            print('Flagged as bad quality')
         else:
-            inspection[event_i][imsrc_i].replace('u', '')
-            print('Uncertain flag removed')
+            inspection[event_i][imsrc_i] = \
+                    inspection[event_i][imsrc_i].replace('q', '')
+            print('Quality flag removed')
+        inspection[event_i][imsrc_i] = \
+                inspection[event_i][imsrc_i].replace('c', ''\
+                ).replace('y', '').replace('n', '')
         next_key(event)
 
-    def mark_as_confusion(event): # mark host as uncertain.
+    def mark_as_closeby(event): # mark host asbad quality.
         event_i, imsrc_i, imfile_i = image_stamps[i_current]
         if event_i not in inspection:
             inspection[event_i] = OrderedDict()
             inspection[event_i][imsrc_i] = 'c'
-            print('Flagged as confusion')
+            print('Flagged as closeby')
         elif imsrc_i not in inspection[event_i]:
             inspection[event_i][imsrc_i] = 'c'
-            print('Flagged as confusion')
-        elif '?' not in inspection[event_i][imsrc_i]:
+            print('Flagged as closeby')
+        elif 'c' not in inspection[event_i][imsrc_i]:
             inspection[event_i][imsrc_i] += 'c'
-            print('Flagged as confusion')
+            print('Flagged as closeby')
         else:
-            inspection[event_i][imsrc_i].replace('c', '')
-            print('Confusion flag removed')
+            inspection[event_i][imsrc_i] = \
+                    inspection[event_i][imsrc_i].replace('c', '')
+            print('closeby flag removed')
+        inspection[event_i][imsrc_i] = \
+                inspection[event_i][imsrc_i].replace('q', ''\
+                ).replace('y', '').replace('n', '')
         next_key(event)
 
-    def mark_as_favorite(event): # mark host as uncertain.
+    def mark_as_favorite(event): # mark host asbad quality.
         event_i, imsrc_i, imfile_i = image_stamps[i_current]
         if event_i not in inspection:
             inspection[event_i] = OrderedDict()
@@ -140,13 +156,14 @@ if __name__ == '__main__':
         elif imsrc_i not in inspection[event_i]:
             inspection[event_i][imsrc_i] = 'f'
             print('Flagged as favorite')
-        elif '?' not in inspection[event_i][imsrc_i]:
+        elif 'f' not in inspection[event_i][imsrc_i]:
             inspection[event_i][imsrc_i] += 'f'
             print('Flagged as favorite')
         else:
-            inspection[event_i][imsrc_i].replace('f', '')
+            inspection[event_i][imsrc_i] = \
+                    inspection[event_i][imsrc_i].replace('f', '')
             print('Favorite flag removed')
-        next_key(event)
+        # next_key(event)
 
     def mark_as_visible(event): # mark host as visible.
         print(i_current, 'Marked as visible')
@@ -155,7 +172,9 @@ if __name__ == '__main__':
             inspection[event_i] = OrderedDict()
         if imsrc_i not in inspection[event_i]:
             inspection[event_i][imsrc_i] = ''
-        inspection[event_i][imsrc_i].replace('n', '')
+        inspection[event_i][imsrc_i] = \
+                inspection[event_i][imsrc_i].replace('n', ''\
+                ).replace('q', '').replace('c', '')
         inspection[event_i][imsrc_i] += 'y'
         next_key(event)
 
@@ -166,11 +185,13 @@ if __name__ == '__main__':
             inspection[event_i] = OrderedDict()
         if imsrc_i not in inspection[event_i]:
             inspection[event_i][imsrc_i] = ''
-        inspection[event_i][imsrc_i].replace('y', '')
+        inspection[event_i][imsrc_i] = \
+                inspection[event_i][imsrc_i].replace('y', ''\
+                ).replace('q', '').replace('c', '')
         inspection[event_i][imsrc_i] += 'n'
         next_key(event)
 
-    def save_progress(event): # mark host as uncertain.
+    def save_progress(event): # mark host asbad quality.
         with open('./visual-inspection.json', 'w') as fp:
             json.dump(inspection, fp, indent=4)
         print('File saved.')
@@ -180,13 +201,16 @@ if __name__ == '__main__':
 
     root.bind('<Up>', mark_as_visible)
     root.bind('<Down>', mark_as_absent)
-    root.bind('u', mark_as_uncertain)
-    root.bind('c', mark_as_confusion)
+    root.bind('q', mark_as_lowquality)
+    root.bind('c', mark_as_closeby)
     root.bind('f', mark_as_favorite)
     root.bind('s', save_progress)
 
     # run program.
-    root.mainloop()
+    try:
+        root.mainloop()
+    except:
+        pass
 
     # save again upon exit.
     with open('./visual-inspection.json', 'w') as fp:
