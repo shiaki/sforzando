@@ -63,6 +63,18 @@ if __name__ == '__main__':
         if (event_i in image_cutout) and (image_cutout[event_i]['ps1']):
             continue
 
+        # get nearby sources,
+        nh_i = nearest_hosts[event_i] # could be empty tuple/list.
+
+        # skip if there is something within 25 kpc
+        is_cand = True
+        for src_j in nh_i:
+            # projected distance > 25 kpc, not a star
+            if (src_j[-2] < 25.) and ('S' not in src_j[6]):
+                is_cand = False
+        if not is_cand:
+            continue
+
         time.sleep(1. + np.abs(np.random.randn())) # no hurry
 
         # locate image

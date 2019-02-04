@@ -126,10 +126,20 @@ if __name__ == '__main__':
                 except:
                     continue # not my fault :)
                 sep_k = crd_i.separation(crd_k).arcsec
+                pm_k, pm_err_k, star_flag_k = None, None, 'NA'
+                if 'gaia' in cat_j: # for Gaia sources: find proper motion
+                    if rec_k[7] is None or rec_k[7] is None:
+                        pass
+                    else: # find total proper motion and its error.
+                        pm_k = np.sqrt(rec_k[7] ** 2 + rec_k[9] ** 2)
+                        pm_err_k = np.sqrt((rec_k[7] * rec_k[8]) ** 2 \
+                                + (rec_k[9] * rec_k[10]) ** 2) / pm_k
+                        star_flag_k = 'S' if (pm_k / pm_err_k > 2.) else '?'
                 srcs_i.append((
                     cat_names[cat_j],
                     str(rec_k[srcid_cols[cat_j]]),
                     crd_k.ra.deg, crd_k.dec.deg,
+                    pm_k, pm_err_k, star_flag_k,
                     sep_k,
                     sep_k * kpc_per_asec_i
                 ))
@@ -147,6 +157,7 @@ if __name__ == '__main__':
                     cat_j,
                     rec_k[0],
                     rec_k[1], rec_k[2],
+                    None, None, 'NA', # no proper motion in DataLab catalogs.
                     sep_k,
                     sep_k * kpc_per_asec_i
                 ))
@@ -165,6 +176,6 @@ if __name__ == '__main__':
 
     # save into file.
     with open('nearest-host-candidate.json', 'w') as fp:
-        json.dump(nearest_src, fp, indent=4, encoder=npEncoder)
+        json.dump(nearest_src, fp, indent=4, cls=npEncoder,)
 
 # EOF

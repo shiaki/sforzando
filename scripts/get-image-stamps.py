@@ -139,8 +139,28 @@ if (__name__ == '__main__') and ('run' in sys.argv):
         # get its nearest host candidate
         nh_i = nearest_hosts[event_i] # could be empty tuple/list.
 
+        '''
+        # group by cross-matched results.
+        nh_grp_i = dict()
+        for src_j in nh_i:
+            if src_j[-1] not in nh_grp_i:
+                nh_grp_i[src_j[-1]] = list()
+            nh_grp_i[src_j[-1]].append(src_j)
+        '''
+
+        '''
         # skip if the nearest host candidate is within 15 kpc.
         if nh_i and nh_i[0][-1] < 15.:
+            continue
+        '''
+
+        # find objects without galaxies in 25 kpc.
+        is_cand = True
+        for src_j in nh_i:
+            # projected distance > 25 kpc, not a star
+            if (src_j[-2] < 25.) and ('S' not in src_j[6]):
+                is_cand = False
+        if not is_cand:
             continue
 
         # read RA, Dec of the event,

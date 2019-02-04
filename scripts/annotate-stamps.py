@@ -38,9 +38,10 @@ plot_colors = {
 }
 
 def annotate_image(event_name, event_info, survey_name, image_file,
-        nearby_srcs, draw_crosshair=True, draw_sources=True, draw_cicle=True,
-        circle_radius_kpc=15., desti_dir='./tmp-img/', filename_suffix='',
-        linewidth_factor=1):
+        nearby_srcs, draw_crosshair=True, crosshair_len=(0.015, 0.035),
+        draw_sources=True, draw_source_groups=True, group_rad=2.0,
+        draw_cicle=True, circle_radius_kpc=15., desti_dir='./tmp-img/',
+        filename_suffix='', linewidth_factor=1):
 
     # read image file.
     img = Image.open(image_file)
@@ -61,7 +62,7 @@ def annotate_image(event_name, event_info, survey_name, image_file,
                 fill=ch_c, width=linewidth_factor)
 
     # draw nearby sources
-    if draw_sources:
+    if draw_sources or draw_source_groups:
 
         # get supernova coordinates,
         crd_c = SkyCoord(ra=event_info['ra'],
@@ -74,6 +75,8 @@ def annotate_image(event_name, event_info, survey_name, image_file,
                 -2. * dra * asec_per_deg / dscale, \
                 2. * ddec * asec_per_deg / dscale)
 
+    if draw_sources:
+
         # for each catalog src, calculate relative shift.
         for src_i in nearby_srcs:
 
@@ -84,14 +87,58 @@ def annotate_image(event_name, event_info, survey_name, image_file,
                     (crd_i.dec.deg - dec_c)) # now in degrees.
             xp_i, yp_i = d2pix(dra_i, ddec_i, stamp_sizes[survey_name])
 
-            if xp_i < 10 or yp_i < 10 \
-                    or xp_i > im_w - 1 - 10 or yp_i > im_h - 1 - 10:
+            im_s = np.sqrt(im_h * im_w)
+            ch_li, ch_lo = crosshair_len[0] * im_s, crosshair_len[1] * im_s
+
+            if (xp_i < ch_lo or yp_i < ch_lo) or
+                    (xp_i > im_w - (1 + ch_lo) or yp_i > im_h - (1 + ch_lo)):
                 continue # beyond image box.
 
-            imdraw.line([(xp_i - 10, yp_i), (xp_i - 5, yp_i)],
+            imdraw.line([(xp_i - ch_lo, yp_i), (xp_i - ch_li, yp_i)],
                         fill=plot_colors[src_i[0]], width=linewidth_factor)
-            imdraw.line([(xp_i, yp_i + 10), (xp_i, yp_i + 5)],
+            imdraw.line([(xp_i, yp_i + ch_lo), (xp_i, yp_i + ch_li)],
                         fill=plot_colors[src_i[0]], width=linewidth_factor)
+
+    if draw_source_groups:
+
+        # arrange sources into
+        src_groups = dict()
+        for src_i in nearby_srcs:
+            if src_i[-1] not in src_groups:
+                src_groups[src_i[-1]] = list()
+            src_groups[src_i[-1]].append(src_i)
+
+        # plot groups
+        for grp_id, grp_srcs in src_groups.items():
+
+            # use proper motion in Gaia DR2 to separate galaxies and stars
+            is_stellar = False
+            for src_i in grp_srcs:
+                if src_i[0] == 'Gaia2': # this is a Gaia source.
+                    if src_i[4] / src_i[5] > 2.:
+                        is_stellar = True
+
+            # convert relative coord to pixel coord.
+            crd_i = SkyCoord(ra=grp_srcs[0][2],
+                             dec=grp_srcs[0][3],
+                             unit=('deg', 'deg'))
+            dra_i, ddec_i = ((crd_i.ra.deg - ra_c) * cos_dec_c, \
+                    (crd_i.dec.deg - dec_c)) # now in degrees.
+            xp_i, yp_i = d2pix(dra_i, ddec_i, stamp_sizes[survey_name])
+
+            crad = np.sqrt(im_h * im_w) * (group_rad / stamp_sizes[survey_name])
+            if (xp_i < crad or yp_i < crad) or
+                    (xp_i > im_w - (1 + crad) or yp_i > im_h - (1 + crad)):
+                continue # beyond image box.
+
+            if is_stellar:
+                imdraw.ellipse([xp_i - crad, yp_i - crad, \
+                        xp_i + crad, yp_i + crad], outline='#333fff',
+                        width=linewidth_factor)
+            else:
+                imdraw.ellipse([xp_i - crad, yp_i - crad, \
+                        xp_i + crad, yp_i + crad], outline='#ef6221',
+                        width=linewidth_factor)
 
     if draw_cicle:
 
