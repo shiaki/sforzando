@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 '''
+    Sort image stamps per the results of visual inspection.
 '''
 
 import os, sys
