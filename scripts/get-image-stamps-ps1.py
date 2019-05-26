@@ -3,6 +3,8 @@
     Get PanSTARRS image cutout for our event candidates.
 
     ** For compatibility issues, please run this script under python2
+
+    190506: Download FITS files.
 '''
 
 import os, sys, time
@@ -66,11 +68,11 @@ if __name__ == '__main__':
         # get nearby sources,
         nh_i = nearest_hosts[event_i] # could be empty tuple/list.
 
-        # skip if there is something within 25 kpc
+        # skip if there is something within 30 kpc
         is_cand = True
         for src_j in nh_i:
-            # projected distance > 25 kpc, not a star
-            if (src_j[-2] < 25.) and ('S' not in src_j[6]):
+            # projected distance > 30 kpc, not a star (using Gaia DR2 pm)
+            if (src_j[-2] < 30.) and ('S' not in src_j[6]):
                 is_cand = False
         if not is_cand:
             continue

@@ -3,6 +3,8 @@
 '''
     For events in the candidate list, sort out those without nearby objects by
     projected phiscial distance.
+
+    190506: Survey coverage dictionary included. (YJ)
 '''
 
 import os
@@ -43,11 +45,25 @@ class npEncoder(json.JSONEncoder):
 def simple_match(ra_c, dec_c, srcs, dist_tol=2.):
 
     '''
-    "Cross-match" sources within the patch.
+    "Cross-match" sources within the patch using a fixed distance toletance
 
     Parameters
     ----------
+    ra_c, dec_c : float
+        Field center coordinates in degrees.
 
+    srcs : list of tuple
+        Sources within this field.
+
+    dist_tol : float
+        Tolerance of position accuracy in arcseconds.
+
+    Returns
+    -------
+    matched_srcs : list of tuple
+        Corss-matched sources, corresponding to the order presented in `srcs'.
+        Last element of each tuple indicates the unique cross-matched index
+        of this matched object.
     '''
 
     # convert into delta-arcseconds
@@ -95,14 +111,14 @@ if __name__ == '__main__':
         cand_hosts_dl = json.load(fp, object_pairs_hook=OrderedDict)
 
     # nearest source in any survey.
-    nearest_src = OrderedDict()
+    nearest_src, survey_coverage = OrderedDict(), OrderedDict()
 
     # for candidate events
     for event_i, event_info_i in tqdm(cand_events.items(),
                                       total=len(cand_events)):
 
-        # list of nearby sources for this event:
-        srcs_i = list()
+        # nearby sources and dataset coverage for this event:
+        srcs_i, coverage_i = list(), list()
 
         # construct coord
         crd_i = SkyCoord(ra=event_info_i['ra'],
@@ -116,6 +132,8 @@ if __name__ == '__main__':
         # for Vizier sources:
         tabs_i = cand_hosts_v[event_i]
         for cat_j, tab_j in tabs_i.items():
+            if cat_j == 'search_radius':
+                continue
             ra_colid_j, dec_colid_j = radec_cols[cat_j][0]
             radec_units_j = radec_cols[cat_j][1]
             for rec_k in tab_j:
@@ -162,6 +180,9 @@ if __name__ == '__main__':
                     sep_k * kpc_per_asec_i
                 ))
 
+        # survey coverage.
+        coverage_i = list(set([w[0] for w in srcs_i])) # get unique.
+
         # sort then by projected physical dist.
         # srcs_i = list(filter(lambda x: x[-1] < 50., srcs_i)) # within 50 kpc
         # srcs_i = sorted(srcs_i, key=lambda x: x[-1])
@@ -174,8 +195,13 @@ if __name__ == '__main__':
         else:
             nearest_src[event_i] = list()
 
+        # save survey coverage.
+        survey_coverage[event_i] = coverage_i
+
     # save into file.
     with open('nearest-host-candidate.json', 'w') as fp:
         json.dump(nearest_src, fp, indent=4, cls=npEncoder,)
 
+    with open('survey-coverage.json', 'w') as fp:
+        json.dump(survey_coverage, fp, indent=4, cls=npEncoder,)
 # EOF

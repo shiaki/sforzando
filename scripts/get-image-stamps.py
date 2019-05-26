@@ -157,8 +157,8 @@ if (__name__ == '__main__') and ('run' in sys.argv):
         # find objects without galaxies in 25 kpc.
         is_cand = True
         for src_j in nh_i:
-            # projected distance > 25 kpc, not a star
-            if (src_j[-2] < 25.) and ('S' not in src_j[6]):
+            # projected distance > 30 kpc, not a star
+            if (src_j[-2] < 30.) and ('S' not in src_j[6]):
                 is_cand = False
         if not is_cand:
             continue

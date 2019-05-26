@@ -9,7 +9,7 @@ import json
 import glob
 from collections import OrderedDict
 
-osc_dir = '../Transient-catalogs/supernovae/'
+osc_dir = './Transient-catalogs/supernovae/'
 
 def read_supernovae():
     '''
@@ -82,8 +82,12 @@ if __name__ == '__main__':
         for event_name_i, event_info_i in event_i.items():
 
             # skip events with host names
+            '''
             if ('host' in event_info_i) and event_info_i['host']:
                 continue
+            '''
+            # Host name condition removed, 052519, YJ
+            # Some hostless SNe have host names! (Anon)
 
             # skip events without valid redshift
             if not (('redshift' in event_info_i) \
@@ -110,6 +114,10 @@ if __name__ == '__main__':
 
             # get redshift of the event (only the first one.)
             zred_i = event_info_i['redshift'][0]['value']
+
+            # New: only select events within z~0.1 (YJ, 20190506)
+            if float(zred_i) > 0.1:
+                continue
 
             # this is a candidate event.
             cand_i = [event_name_i, type_descr_i, ra_i, dec_i, zred_i]

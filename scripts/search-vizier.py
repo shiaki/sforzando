@@ -16,6 +16,9 @@ from astropy.coordinates import SkyCoord
 import astropy.units as u
 from astroquery.vizier import Vizier
 
+# New, 190506
+from astropy.cosmology import WMAP9 as cosmo
+
 from catalogs import *
 
 def as_tuple(rec):
@@ -54,17 +57,29 @@ if __name__ == '__main__':
         if cand_i in candidate_hosts:
             continue
 
+        # some events do not have complete RA/Dec info.
+        if not (cand_info_i['ra'] and cand_info_i['dec']):
+            continue
+
         # construct coord
         crd_i = SkyCoord(ra=cand_info_i['ra'],
                          dec=cand_info_i['dec'],
                          unit=('hour', 'deg'))
 
+        # New 190506: use 30 kpc redshift cut.
+        zred_i = np.abs(float(cand_info_i['redshift']))
+        try:
+            ksc_i = cosmo.kpc_proper_per_arcmin(zred_i).value / 60. # kpc/asec
+            rad_i = min(30. / ksc_i, 120.)
+        except:
+            rad_i = 120.
+
         # search catalogs. (30" limit)
         tab_list_i = Vizier.query_region(crd_i,
-                                         radius=60. * u.arcsec,
+                                         radius=rad_i * u.arcsec,
                                          catalog=vizier_cats)
 
-        sources_i = OrderedDict()
+        sources_i = OrderedDict([('search_radius', rad_i)])
         for cat_name_i, tab_i in tab_list_i._dict.items():
             sources_i[cat_name_i] = list()
             for rec_j in tab_i:

@@ -43,6 +43,10 @@ if __name__ == '__main__':
         if cand_i in candidate_hosts:
             continue
 
+        # some events do not have complete RA/Dec info.
+        if not (cand_info_i['ra'] and cand_info_i['dec']):
+            continue
+
         crd_i = SkyCoord(ra=cand_info_i['ra'],
                          dec=cand_info_i['dec'],
                          unit=('hour', 'deg'))
